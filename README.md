@@ -1,14 +1,16 @@
 # Gmail Labeling Script: "Contact Exists"
 
-This Google Apps Script automatically labels Gmail threads with the "Contact Exists" label if the sender's email address exists in your Google Contacts. This can help you easily identify and organize emails from known contacts.
+This Google Apps Script automatically labels Gmail threads with the "Contact Exists" label if the sender's email address exists in your Google Contacts. If the sender is not in your contacts, the email will be labeled as "Not in Contacts." This helps you efficiently organize and manage your inbox by processing only unlabeled emails.
 
 ## Features
 
-- Searches recent emails in your Gmail inbox.
+- Searches recent, unlabeled emails in your Gmail inbox.
 - Checks if the sender's email address exists in your Google Contacts.
 - Labels the email thread with "Contact Exists" if a match is found.
+- Labels the email thread with "Not in Contacts" if the sender is not in your contacts.
+- Ensures that emails are processed only once, avoiding reprocessing.
 
-![image](https://github.com/user-attachments/assets/300818ee-d7cc-4858-a88d-19257ad4a6be)
+![image](https://github.com/user-attachments/assets/9a42f6d2-ea99-4dfd-adb5-56b31167c28e)
 
 ## Installation
 
@@ -26,19 +28,42 @@ Copy the following code into the Apps Script editor:
 
 ```javascript
 function addLabelIfContactExists() {
-  var threads = GmailApp.search('newer_than:1d'); // Modify the search query as needed
-  var label = GmailApp.getUserLabelByName('Contact Exists');
-  if (!label) {
-    label = GmailApp.createLabel('Contact Exists');
+  var lock = LockService.getScriptLock();
+  
+  if (lock.tryLock(30000)) {
+    try {
+      processEmails();
+    } finally {
+      lock.releaseLock();
+    }
+  } else {
+    Logger.log("Script is already running. Exiting to prevent overlap.");
+  }
+}
+
+function processEmails() {
+  // Search for emails from the last day that have no labels
+  var threads = GmailApp.search('newer_than:1d -label:*'); 
+  var contactLabel = GmailApp.getUserLabelByName('Contact Exists');
+  var notInContactsLabel = GmailApp.getUserLabelByName('Not in Contacts');
+  
+  if (!contactLabel) {
+    contactLabel = GmailApp.createLabel('Contact Exists');
   }
   
+  if (!notInContactsLabel) {
+    notInContactsLabel = GmailApp.createLabel('Not in Contacts');
+  }
+
   for (var i = 0; i < threads.length; i++) {
     var messages = threads[i].getMessages();
     for (var j = 0; j < messages.length; j++) {
       var from = messages[j].getFrom();
       var email = extractEmail(from);
       if (isContactExists(email)) {
-        threads[i].addLabel(label);
+        threads[i].addLabel(contactLabel);
+      } else {
+        threads[i].addLabel(notInContactsLabel);
       }
     }
   }
@@ -50,7 +75,6 @@ function isContactExists(email) {
 }
 
 function extractEmail(fromField) {
-  // Extract the email address from the "from" field
   var emailPattern = /<(.+)>/;
   var match = fromField.match(emailPattern);
   return match ? match[1] : fromField;
@@ -62,7 +86,7 @@ function extractEmail(fromField) {
 1. Click the **Run** button (►) in the Apps Script editor.
 2. A dialog will appear asking for permission to access your Gmail and Contacts. Review and authorize the permissions.
 
-### 4. Set Up a Trigger (Optional)
+### 4. Set Up a Trigger
 
 To have the script run automatically:
 
@@ -73,14 +97,14 @@ To have the script run automatically:
 
 ### 5. Customize the Script (Optional)
 
-- **Search Query**: Modify the search query in the `GmailApp.search('newer_than:1d')` line to change the emails the script will process.
-- **Label Name**: Change the label name from `"Contact Exists"` to something else if you prefer a different label.
+- **Search Query**: The script searches for emails from the last day that have no labels using `newer_than:1d -label:*`. You can adjust the search query to fit your needs.
+- **Label Names**: Change the label names from `"Contact Exists"` and `"Not in Contacts"` to something else if you prefer different labels.
 
 ### 6. Save and Test
 
 - After setting everything up, save your project.
 - Run the script manually or wait for the trigger to execute.
-- Check your Gmail to see if the appropriate emails have been labeled with "Contact Exists".
+- Check your Gmail to see if the appropriate emails have been labeled with "Contact Exists" or "Not in Contacts."
 
 ## Disclaimer
 
@@ -92,7 +116,11 @@ By using this script, you agree to take full responsibility for any actions it p
 
 - If the script doesn't seem to be working, check the execution logs by going to **View > Logs** in the Apps Script editor.
 - Ensure that the script has the necessary permissions to access your Gmail and Contacts.
+- If emails are not being labeled as expected, double-check the search query and ensure the labels are being created correctly.
 
 ## License
+
+This script is provided under the MIT License. Feel free to use and modify it to suit your needs.
+
 
 This script is provided under the MIT License. Feel free to use and modify it to suit your needs.
