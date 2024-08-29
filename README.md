@@ -43,7 +43,7 @@ function addLabelIfContactExists() {
 
 function processEmails() {
   // Search for emails from the last day that have no labels
-  var threads = GmailApp.search('newer_than:1d -label:*'); 
+  var threads = GmailApp.search('newer_than:1d has:nouserlabels'); 
   var contactLabel = GmailApp.getUserLabelByName('Contact Exists');
   var notInContactsLabel = GmailApp.getUserLabelByName('Not in Contacts');
   
@@ -79,6 +79,7 @@ function extractEmail(fromField) {
   var match = fromField.match(emailPattern);
   return match ? match[1] : fromField;
 }
+
 ```
 
 ### 3. Authorize the Script
