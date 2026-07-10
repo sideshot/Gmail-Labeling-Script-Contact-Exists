@@ -7,8 +7,6 @@ Google Apps Script that labels recent unlabeled Gmail threads:
 
 Uses the **People API** (not the deprecated `ContactsApp`).
 
-Live project (richard@cabinetparts.com): **Label Email if Contact Exists**
-
 ## Files
 
 | File | Role |
@@ -22,23 +20,18 @@ Live project (richard@cabinetparts.com): **Label Email if Contact Exists**
 2. Builds a contact email index once per run (paginated Connections + ContactGroups)
 3. Labels each matching thread once
 
-## Install / update
+## Install
 
-### Option A — push with `gws` (preferred)
+1. Go to [script.google.com](https://script.google.com/) → **New project**
+2. Copy `Code.gs` from this repo into the editor (replace the default `Code.gs`)
+3. Project Settings → show `appsscript.json`, then replace it with the repo’s `appsscript.json`
+4. Confirm **People API** is enabled under Services / Advanced Google services (the manifest already declares it)
+5. Run `addLabelIfContactExists` once and approve **Gmail** + **Contacts** when prompted
+6. Triggers → add a time-driven trigger on `addLabelIfContactExists` (e.g. every 5–15 minutes)
 
-```bash
-gws script +push --script SCRIPT_ID --dir .
-```
+### Updating from an older copy
 
-Requires Apps Script API enabled for the user:  
-https://script.google.com/home/usersettings → **Google Apps Script API** On
-
-### Option B — paste in the editor
-
-1. Open [script.google.com](https://script.google.com/) → project **Label Email if Contact Exists**
-2. Replace `Code.gs` and `appsscript.json` with the files in this repo
-3. Run `addLabelIfContactExists` once and approve Gmail + Contacts
-4. Confirm a time-driven trigger is attached to `addLabelIfContactExists`
+If you previously pasted the old README script that used `ContactsApp`, replace both `Code.gs` and `appsscript.json` with the current files on `main`, then run the function once to re-authorize.
 
 ## Ignore group
 
@@ -47,8 +40,8 @@ Create a Google Contacts group named **Ignore**. Contacts in that group are labe
 ## Notes
 
 - Labels are created automatically if missing.
-- Domain directory lookup was removed; only personal Contacts are used (faster, fewer permission failures).
-- Re-authorize after this update if the script prompts for Contacts/People scopes.
+- Only personal Google Contacts are checked (not the Workspace domain directory).
+- Search window defaults to the last 10 days of unlabeled mail; change `newer_than:10d` in `processEmails()` if you want a different window.
 
 ## License
 
